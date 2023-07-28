@@ -22,7 +22,7 @@ function auth(req, res, next){
     if(req.session.log){
         return next()
     }else{
-        return res.status(403).send("Debes iniciar sesion para ver los productos")
+        return res.status(401).send("Debes iniciar sesion para ver los productos")
     }
 
 }
