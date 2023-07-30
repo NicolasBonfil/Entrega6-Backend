@@ -4,26 +4,34 @@ import userModel from "../dao/models/Users.model.js"
 const router = Router()
 
 router.post("/register", async (req, res) => {
-    const {first_name, last_name, email, age, password} = req.body
+    const {first_name, last_name, email, password} = req.body
+
+    if(!first_name || !last_name || !email || !password) return res.status(400).send({status: "error", error: "Debes completar todos los campos"})
+
     const exist = await userModel.findOne({email})
 
-    if(exist || email === "adminCoder@coder.com") return res.status(400).send({status: "error", error: "User already exists"})
+    if(exist || email === "adminCoder@coder.com") return res.status(400).send({status: "error", error: "Usuario existente"})
 
-    const user = {
-        first_name,
-        last_name,
-        email,
-        age,
-        password
+    
+    try {
+        const user = {
+            first_name,
+            last_name,
+            email,
+            password
+        }
+
+        let result = await userModel.create(user)
+        res.status(200).send({status: "success", message: "Usuario registrado"}) 
+    } catch (error) {
+        res.status(400).send({status: "error", error: "Error al registrar el usuario"})
     }
-
-    let result = userModel.create(user)
-
-    res.send({status: "success", message: "User registered"})
 })
 
 router.post("/login", async (req, res) => {
     const {email, password} = req.body
+
+    if(!email || !password) return res.status(400).send({status: "error", error: "Debes completar todos los campos"})
 
     let user = await userModel.findOne({email, password})
     if(!user && (email !== "adminCoder@coder.com" && password !== "adminCod3r123")) return res.status(400).send({status: "error", error: "Invalid email or password"})
@@ -47,15 +55,15 @@ router.post("/login", async (req, res) => {
 
     req.session.log = true
 
-    res.send({status: "success", payload: req.session.user, message: "Usuario logueado"})
+    res.status(200).send({status: "success", payload: req.session.user, message: "Usuario logueado"})
 })
 
 router.post("/logout", (req, res) => {
     req.session.destroy(error => {
         if(error){
-            res.json({error: "error logout", mensaje: "Error al cerrar la sesion"})
+            res.status(400).json({error: "error logout", mensaje: "Error al cerrar la sesion"})
         }
-        res.send("Sesion cerrada correctamente")
+        res.status(200).send("Sesion cerrada correctamente")
     })
 })
 export default router

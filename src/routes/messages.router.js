@@ -9,11 +9,15 @@ const router = Router()
 router.post("/", async (req, res) => {
     const {user, message} = req.body
 
-    const newMessage = await manejadorMensajes.saveMessages(user, message)
+    try {
+        const newMessage = await manejadorMensajes.saveMessages(user, message)
+        socketServer.emit("newMessage", newMessage)
+        res.status(200).send(({status: "success", payload: newMessage}))
+        
+    } catch {
+        if(!user || !message) return res.status(400).send({status: "error", error: "Faltan datos"})
+    }
 
-    socketServer.emit("newMessage", newMessage)
-
-    res.send(({status: "success", payload: newMessage}))
 })
 
 export default router

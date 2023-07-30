@@ -14,7 +14,6 @@ export default class Messages{
     }
 
     saveMessages = async (user, message) => {
-        if(!user || !message) return ({status: "error", error: "Faltan datos"})
         let result = await messagesModel.create({user, message})
         return result
     }

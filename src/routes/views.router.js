@@ -18,7 +18,6 @@ router.get("/messages", async (req, res) => {
 })
 
 function auth(req, res, next){
-    console.log(req.session.log);
     if(req.session.log){
         return next()
     }else{
@@ -28,8 +27,6 @@ function auth(req, res, next){
 }
 
 router.get("/products", auth, async (req, res) => {
-    // console.log(req.session.log);
-
     const {page = 1} = req.query
     const {docs, hasPrevPage, hasNextPage, nextPage, prevPage} = await productsModel.paginate({}, {limit: 2, page, lean: true})
 

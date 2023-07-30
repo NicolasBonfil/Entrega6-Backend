@@ -13,38 +13,31 @@ export default class Products{
     getProductById = async (id) => {
         const products = await this.getProducts()
 
-        if(!(products.find(p => p._id == id))) return ({status: "error", error: "No existe un producto con ese id"})
-        return(products.find(p => p._id == id))
+        const product = products.find(p => p._id == id)
+        return(product)
     }
 
     addProduct = async product => {
         const products = await this.getProducts()
 
-        if(!product.title || !product.description || !product.price || !product.code || !product.category){
-            return({status: "error", error: "Faltan datos"})
-        }
+        const productoAgregado = products.find(p => p.code == product.code)
+        if(productoAgregado) return error
 
         if(product.stock === 0) product.status = false
 
-        const productoAgregado = products.find(p => p.code == product.code)
-        if(productoAgregado){
-            return ({status: "error", error: "El producto ya esta registrado"})
-        }
-
         let result = await productsModel.create(product)
-
-        return ({status: "success", payload: result})
+        return result
     }
 
     updateProduct = async (pid, datosActualizados) => {
-        const product = await productsModel.findOne({_id: pid})
+        const products = await this.getProducts()
 
         const keys = Object.keys(datosActualizados)
         const values = Object.values(datosActualizados)
 
-        if(!(product)){
-            return ({status: "error", error: "No existe un producto con ese id"})
-        }
+        const product = products.find(p => p._id == pid)
+        if(!product) return error
+
 
         if(keys.includes("id")){
             const indice = keys.indexOf("id")
@@ -54,12 +47,8 @@ export default class Products{
 
         if(keys.includes("code")){
             const indice = keys.indexOf("code")
-        
-            const productoAgregado = await productsModel.findOne({code: values[indice]})
-
-            if(productoAgregado){
-                return ({status: "error", error: "Ya hay un producto con ese codigo"})
-            }
+            const existsProduct = products.find(p => p.code == values[indice])
+            if(existsProduct) return error
         }
 
         for(let i = 0; i < keys.length; i++){
@@ -69,18 +58,15 @@ export default class Products{
             await productsModel.updateOne({_id: pid}, product);
         }
 
-        return ({status: "success", payload: product})
+        return product
     }
 
-    deleteProduct = async (pid) => {
-        const product = await productsModel.findOne({_id: pid})
-        
-        if(!(product)){
-            return ({status: "error", error: "No existe un producto con ese id"})
-        }
-        
+    deleteProduct = async pid => {
+        const products = await this.getProducts()
+        const product = products.find(p => p._id == pid)
+        if(!product) return error
+
         await productsModel.deleteOne({_id: pid})
-    
-        return({status: "Ok", message: "Producto eliminado"})
+        return "Producto eliminado"
     }
 }

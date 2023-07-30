@@ -5,45 +5,24 @@ export default class Carts{
         console.log("Estamos trabajando con bd mongo");
     }
 
-    getCarts = async () => {
-        let carts = await cartsModel.find().lean()
-        return carts
-    }
-
     createCart = async () => {
-        const carts = await this.getCarts()
-
         const products = []
-
         const cart = {
             products
         }
 
         let result = await cartsModel.create(cart)
-
-        return ({status: "success", payload: result})
+        return result
     }
 
     getProducts = async (cid) => {
-        if(!cid) return ({status: "error", error: "Faltan datos"})
-        
-        const cart = await cartsModel.findOne({_id: cid})
-        if(!cart) return ({status: "error", error: "Carrito inexistente"})
-
         const carrito = await cartsModel.findOne({_id: cid}).populate("productsInCart.product").lean(true)
-
-        const pepe = [{quantity: 1, product: {title: "Nico"}}, {quantity: 1, product: {title: "Mariana"}}]
         return (carrito.productsInCart)
     }
 
     addProductToCart = async (cid, pid) => {
-        if(!cid || !pid) return ({status: "error", error: "Faltan datos"})
-        
         const cart = await cartsModel.findOne({_id: cid})
-
-        if(!cart) return ({status: "error", error: "Carrito inexistente"})
-
-        const productIndex = cart.productsInCart.findIndex((p) => p.product._id == pid);
+        const productIndex = cart.productsInCart.findIndex(p => p.product._id == pid);
 
         if(productIndex == -1){
             let quantity = 1
@@ -53,66 +32,64 @@ export default class Carts{
         }
 
         await cartsModel.updateOne({_id: cart.id }, cart);
-        return ({status: "success", payload: cart})
+        return cart
     }
 
     removeProductFromCart = async (cid, pid) => {
-        if(!cid || !pid) return ({status: "error", error: "Faltan datos"})
-        
         const cart = await cartsModel.findOne({_id: cid})
 
-        if(!cart) return ({status: "error", error: "Carrito inexistente"})
+        const productIndex = cart.productsInCart.findIndex(p => p.product._id == pid);
+        if(productIndex === -1) return error
 
-        const productIndex = cart.productsInCart.findIndex((p) => p.product._id == pid);
-
-        if(productIndex == -1) return ({status: "error", error: "Producto no encontrado"})
-        
         cart.productsInCart.splice(productIndex, 1)
+
         await cartsModel.updateOne({_id: cart.id }, cart);
-        return ({status: "success", payload: cart})
+        return cart
     }
 
     updateCartProducts = async (cid, products) => {
-        if(!cid || !products) return ({status: "error", error: "Faltan datos"})
-
         const cart = await cartsModel.findOne({_id: cid})
 
-        if(!cart) return ({status: "error", error: "Carrito inexistente"})
+        const productsToAdd = []
+        products.forEach(p => {
+            if(!p.product._id || !p.quantity) return error  
+            
+            let id = p.product._id
+            let quantity = p.quantity
+            if(productsToAdd.find(prod => prod.product._id == id)){
+                const producto = productsToAdd.find(prod => prod.product._id == id)
+                producto.quantity += quantity
+            }else{
+                productsToAdd.push({quantity, product:{_id:id}})
+            }
+        })
 
-        cart.productsInCart = products
+        cart.productsInCart = productsToAdd
 
         await cartsModel.updateOne({_id: cart.id }, cart);
-        return ({status: "success", payload: cart})
+        return cart
     }
 
     updateProductQuantity = async (cid, pid, selectedQuantity) => {
-        if(!cid || !pid || !selectedQuantity) return ({status: "error", error: "Faltan datos"})
+        if (typeof selectedQuantity !== "number" || selectedQuantity <= 0 || !(Number.isInteger(selectedQuantity))) return error
 
         const cart = await cartsModel.findOne({_id: cid})
 
-        if(!cart) return ({status: "error", error: "Carrito inexistente"})
-
-        const productIndex = cart.productsInCart.findIndex((p) => p.product._id == pid);
-
-        if(productIndex == -1) return ({status: "error", error: "Producto no encontrado"})
+        const productIndex = cart.productsInCart.findIndex(p => p.product._id == pid);
+        if(productIndex === -1) return error
 
         cart.productsInCart[productIndex].quantity = selectedQuantity
 
         await cartsModel.updateOne({_id: cart.id }, cart);
-        return ({status: "success", payload: cart})
+        return cart
     }
 
     deleteCartProducts = async (cid) => {
-        if(!cid) return ({status: "error", error: "Faltan datos"})
-
         const cart = await cartsModel.findOne({_id: cid})
-
-        if(!cart) return ({status: "error", error: "Carrito inexistente"})
-
         cart.productsInCart = []
 
         await cartsModel.updateOne({_id: cart.id }, cart);
-        return ({status: "success", payload: cart})
+        return cart
     }
 }
 
